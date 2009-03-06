@@ -1,0 +1,127 @@
+
+#!/bin/bash
+# bashreduce: mapreduce in bash
+# erik@fawx.com
+
+function usage() {
+        printf "Usage: %s: [-m host1 [host2...]] [-m map] [-r reduce] [-i input] [-o output]\n" `basename $1`
+        printf "       %s -h for help.\n" `basename $1`
+        exit 2
+}
+
+function showhelp() {
+        printf "Usage: %s: [-m host1 [host2...]] [-c column] [-r reduce] [-i input] [-o output]\n" `basename $1`
+        echo   "bashreduce.  Map an input file to many hosts, sort/reduce, merge"
+        echo   "  -m: hosts to use, can repeat hosts for multiple cores"
+        echo   "      default hosts from /etc/br.hosts"
+        echo   "  -c: column to partition, default = 1 (1-based)"
+        echo   "  -r: reduce function, default = identity"
+        echo   "  -i: input file, default = stdin"
+        echo   "  -o: output file, default = stdout"
+        echo   "  -h: this help message"
+        exit 2
+} 
+
+hosts=
+mapcolumn=1
+reduce=
+input=
+output=
+
+while getopts "m:c:r:i:o:h" name
+do
+  case $name in
+    m)  hosts=$OPTARG;;
+    c)  mapcolumn=$OPTARG;;
+    r)  reduce=$OPTARG;;
+    i)  input=$OPTARG;;
+    o)  output=$OPTARG;;
+    h)  showhelp $0;;
+    [?])  usage $0;;
+  esac
+done 
+
+if [[ -z $hosts ]]
+then
+  if [[ -e /etc/br.hosts ]]
+  then
+    hosts=`cat /etc/br.hosts`
+  else
+    printf "%s: must specify hosts with -m or provide /etc/br.hosts\n" `basename $0`
+    usage $0
+  fi
+fi
+
+if [[ ! -z $reduce ]]
+then
+  reduce="| "$reduce
+fi
+
+# okay let's get started!  first we need a name for our job
+jobpath=/tmp/br_job_`uuidgen`
+mkdir $jobpath
+mkdir $jobpath/in
+mkdir $jobpath/out
+
+# now, for each host, set up in and out fifos (and a netcat for each), and ssh to each host to set up workers listening on netcat
+
+port_in=8192
+port_out=`expr $port_in + 1`
+host_idx=0
+
+for host in $hosts
+do
+  # our named pipes
+  mkfifo $jobpath/in/$host_idx
+  mkfifo $jobpath/out/$host_idx
+  # our remote worker
+  ssh $host "nc -l -p $port_out | sort -k$mapcolumn,$mapcolumn $reduce | nc -q0 -l -p $port_in" &
+  # our local forwarders
+  sleep 1 && nc -q0 $host $port_out < $jobpath/out/$host_idx &
+  sleep 1 && nc $host $port_in > $jobpath/in/$host_idx &
+  port_in=`expr $port_in + 2`
+  port_out=`expr $port_in + 1`
+  host_idx=`expr $host_idx + 1`
+done
+
+#okay, time to awk map
+# we're taking advantage of a special property that awk leaves its file handles open until its done
+# i hope this is universal
+# we're also sending a zero length string to all the handles at the end, in case some pipe got no love
+mapfunction="{
+               srand(\$$mapcolumn);
+               print \$0 >> \"$jobpath/out/\"int(rand()*$host_idx)
+             }
+             END {
+               for (i = 0; i != $host_idx; ++i)
+               {
+                 printf \"\" >> \"$jobpath/out/\"i
+               }
+             }"
+
+if [[ -z $input ]]
+then
+  awk "$mapfunction"
+else
+  pv $input | awk "$mapfunction"
+fi
+
+# make sure each fifo gets an eof
+#for i in `seq 1 $host_idx`
+#do
+#  cat /dev/null > $jobpath/out/`expr $i - 1`
+#done
+
+# save it somewhere
+if [[ -z $output ]]
+then
+  sort -k$mapcolumn,$mapcolumn -m $jobpath/in/*
+else
+  sort -k$mapcolumn,$mapcolumn -m $jobpath/in/* | pv > $output
+fi
+
+# finally, clean up after ourselves
+rm -rf $jobpath
+
+# TODO: is there a safe way to kill subprocesses upon fail?
+# this seems to work: /bin/kill -- -$$
