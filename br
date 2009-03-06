@@ -106,12 +106,6 @@ else
   pv $input | awk "$mapfunction"
 fi
 
-# make sure each fifo gets an eof
-#for i in `seq 1 $host_idx`
-#do
-#  cat /dev/null > $jobpath/out/`expr $i - 1`
-#done
-
 # save it somewhere
 if [[ -z $output ]]
 then
