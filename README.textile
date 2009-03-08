@@ -1,0 +1,27 @@
+h2. bashreduce : mapreduce in a bash script
+
+bashreduce lets you apply your favorite unix tools in a mapreduce fashion across multiple machines/cores.  There's no installation, administration, or distributed filesystem.  You'll need:
+
+* "br":http://github.com/erikfrey/bashreduce/blob/master/br somewhere handy in your path
+* gnu core utils on each machine: sort, awk, grep
+* netcat on each machine
+
+h2. Configuration
+
+If you wish, you may edit @/etc/br.hosts@ and enter the machines you wish to use as workers.  You can also specify this at runtime using @br -m "host1 host2 host3..."@
+
+To take advantage of multiple cores, repeat the host name as many times as you wish.
+
+h2. Examples
+
+h3. sorting
+
+<pre>br < input > output</pre>
+
+h3. word count
+
+<pre>br -r "uniq -c" < input > output</pre>
+
+h3. count words that begin with 'b'
+
+<pre>br -r "grep ^b | uniq -c" < input > output</pre>
