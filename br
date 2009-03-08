@@ -77,9 +77,9 @@ do
   mkfifo $jobpath/in/$host_idx
   mkfifo $jobpath/out/$host_idx
   # lets get the pid of our listener
-  ssh -n $host "mkdir $nodepath"
-  pid=`ssh -n $host "nc -l -p $port_out > $nodepath/in & jobs -l && disown" | awk {'print $2'}`
-  ssh $host -n "tail -s0.1 -f --pid=$pid $nodepath/in | sort -k$mapcolumn,$mapcolumn $reduce | nc -q0 -l -p $port_in > /dev/null & disown"
+  ssh -n $host "mkdir -p $nodepath"
+  pid=`ssh -n $host "nc -l -p $port_out > $nodepath/in_$host_idx & jobs -l && disown" | awk {'print $2'}`
+  ssh $host -n "tail -s0.1 -f --pid=$pid $nodepath/in_$host_idx | sort -k$mapcolumn,$mapcolumn $reduce | nc -q0 -l -p $port_in > /dev/null & disown"
   # our local forwarders
   nc $host $port_in > $jobpath/in/$host_idx &
   nc -q0 $host $port_out < $jobpath/out/$host_idx &
