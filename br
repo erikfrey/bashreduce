@@ -58,7 +58,9 @@ then
 fi
 
 # okay let's get started!  first we need a name for our job
-jobpath=/tmp/br_job_`uuidgen`
+jobid=`uuidgen`
+jobpath="/tmp/br_job_$jobid"
+nodepath="/tmp/br_node_$jobid"
 mkdir $jobpath
 mkdir $jobpath/in
 mkdir $jobpath/out
@@ -74,11 +76,13 @@ do
   # our named pipes
   mkfifo $jobpath/in/$host_idx
   mkfifo $jobpath/out/$host_idx
-  # our remote worker
-  ssh $host "nc -l -p $port_out | sort -k$mapcolumn,$mapcolumn $reduce | nc -q0 -l -p $port_in" &
+  # lets get the pid of our listener
+  ssh -n $host "mkdir $nodepath"
+  pid=`ssh -n $host "nc -l -p $port_out > $nodepath/in & jobs -l && disown" | awk {'print $2'}`
+  ssh $host -n "tail -s0.1 -f --pid=$pid $nodepath/in | sort -k$mapcolumn,$mapcolumn $reduce | nc -q0 -l -p $port_in > /dev/null & disown"
   # our local forwarders
-  sleep 1 && nc -q0 $host $port_out < $jobpath/out/$host_idx &
-  sleep 1 && nc $host $port_in > $jobpath/in/$host_idx &
+  nc $host $port_in > $jobpath/in/$host_idx &
+  nc -q0 $host $port_out < $jobpath/out/$host_idx &
   port_in=`expr $port_in + 2`
   port_out=`expr $port_in + 1`
   host_idx=`expr $host_idx + 1`
@@ -90,7 +94,7 @@ done
 # we're also sending a zero length string to all the handles at the end, in case some pipe got no love
 mapfunction="{
                srand(\$$mapcolumn);
-               print \$0 >> \"$jobpath/out/\"int(rand()*$host_idx)
+               print \$0 >> \"$jobpath/out/\"int(rand()*$host_idx);
              }
              END {
                for (i = 0; i != $host_idx; ++i)
@@ -116,6 +120,10 @@ fi
 
 # finally, clean up after ourselves
 rm -rf $jobpath
+for host in $hosts
+do
+  ssh $host "rm -rf $nodepath"
+done
 
 # TODO: is there a safe way to kill subprocesses upon fail?
 # this seems to work: /bin/kill -- -$$
