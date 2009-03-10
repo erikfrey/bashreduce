@@ -69,7 +69,7 @@ mkdir $jobpath/out
 port_in=8192
 port_out=`expr $port_in + 1`
 host_idx=0
-out_files=0
+out_files=
 
 for host in $hosts
 do
