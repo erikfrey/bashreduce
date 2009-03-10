@@ -1,4 +1,3 @@
-
 #!/bin/bash
 # bashreduce: mapreduce in bash
 # erik@fawx.com
@@ -70,6 +69,7 @@ mkdir $jobpath/out
 port_in=8192
 port_out=`expr $port_in + 1`
 host_idx=0
+out_files=0
 
 for host in $hosts
 do
@@ -83,31 +83,43 @@ do
   # our local forwarders
   nc $host $port_in > $jobpath/in/$host_idx &
   nc -q0 $host $port_out < $jobpath/out/$host_idx &
+  # our vars
+  out_files="$out_files $jobpath/out/$host_idx"
   port_in=`expr $port_in + 2`
   port_out=`expr $port_in + 1`
   host_idx=`expr $host_idx + 1`
 done
 
-#okay, time to awk map
-# we're taking advantage of a special property that awk leaves its file handles open until its done
-# i hope this is universal
-# we're also sending a zero length string to all the handles at the end, in case some pipe got no love
-mapfunction="{
-               srand(\$$mapcolumn);
-               print \$0 >> \"$jobpath/out/\"int(rand()*$host_idx);
-             }
-             END {
-               for (i = 0; i != $host_idx; ++i)
-               {
-                 printf \"\" >> \"$jobpath/out/\"i
-               }
-             }"
-
-if [[ -z $input ]]
+# okay, time to map
+if [[ -z `which brp` ]]
 then
-  awk "$mapfunction"
+  # use awk if we don't have brp
+  # we're taking advantage of a special property that awk leaves its file handles open until its done
+  # i think this is universal
+  # we're also sending a zero length string to all the handles at the end, in case some pipe got no love
+  mapfunction="{
+                srand(\$$mapcolumn);
+                print \$0 >> \"$jobpath/out/\"int(rand()*$host_idx);
+              }
+              END {
+                for (i = 0; i != $host_idx; ++i)
+                {
+                  printf \"\" >> \"$jobpath/out/\"i
+                }
+              }"
+  if [[ -z $input ]]
+  then
+    awk "$mapfunction"
+  else
+    pv $input | awk "$mapfunction"
+  fi
 else
-  pv $input | awk "$mapfunction"
+  if [[ -z $input ]]
+  then
+    brp $outfiles
+  else
+    brp -i $input $outfiles
+  fi
 fi
 
 # save it somewhere
