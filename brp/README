@@ -1,0 +1,2 @@
+Too bad that partitioning using awk is fairly cpu bound.  Here's a little c cheat.  If someone can think of a way to partition text that's much faster than the awk script 
+in br, email me: erik@fawx.com .
