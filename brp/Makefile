@@ -1,4 +1,4 @@
-CCCFLAGS = -O3 -Wall
+CFLAGS = -O3 -Wall
 OBJS = brp.o
 LIBS =
 TARGET = brp
