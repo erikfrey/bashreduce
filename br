@@ -116,7 +116,7 @@ then
 else
   if [[ -z $input ]]
   then
-    brp $outfiles
+    brp $out_files
   else
     pv $input | brp $out_files
   fi
