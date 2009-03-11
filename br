@@ -118,7 +118,7 @@ else
   then
     brp $outfiles
   else
-    brp -i $input $out_files
+    pv $input | brp $out_files
   fi
 fi
 
