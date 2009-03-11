@@ -79,7 +79,7 @@ do
   # lets get the pid of our listener
   ssh -n $host "mkdir -p $nodepath"
   pid=`ssh -n $host "nc -l -p $port_out > $nodepath/in_$host_idx 2> /dev/null < /dev/null & jobs -l" | awk {'print $2'}`
-  ssh $host -n "tail -s0.1 -f --pid=$pid $nodepath/in_$host_idx | sort -k$mapcolumn,$mapcolumn $reduce | nc -q0 -l -p $port_in >& /dev/null &"
+  ssh $host -n "tail -s0.1 -f --pid=$pid $nodepath/in_$host_idx 2> /dev/null < /dev/null | sort -k$mapcolumn,$mapcolumn $reduce 2>/dev/null | nc -q0 -l -p $port_in >& /dev/null &"
   # our local forwarders
   nc $host $port_in > $jobpath/in/$host_idx &
   nc -q0 $host $port_out < $jobpath/out/$host_idx &
