@@ -34,9 +34,9 @@ Completely spurious numbers, all this shows you is how useful br is to *me*   :-
 
 I have four compute machines and I'm usually relegated to using one core on one machine to sort.  How about when I use br?
 
-|_. command |_. time |_. mb/s |
-| sort -k1,1 4gb_file > 4gb_file_sorted | 82m54.746s | 843 kBps |
-| br -i 4gb_file -o 4gb_file_sorted | 9m49s | 6.95 MBps |
+|_. command |_. time |_. transfer rate |
+| @sort -k1,1 4gb_file > 4gb_file_sorted@ | 82m54.746s | 843 kBps |
+| @br -i 4gb_file -o 4gb_file_sorted@ using brp | 6m5.968s | 11.19 MBps |
 
 When I have more time I'll compare this apples to apples.  There's also still a ton of room for improvement.
 
