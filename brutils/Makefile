@@ -1,4 +1,4 @@
-CFLAGS = -ggdb -Wall
+CFLAGS = -O3 -Wall
 OBJS_BRP = brp.o
 OBJS_BRM = brm.o
 HEADERS = brutils.h
