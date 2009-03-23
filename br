@@ -116,18 +116,31 @@ then
 else
   if [[ -z $input ]]
   then
-    brp $out_files
+    brp - `expr $mapcolumn - 1` $out_files
   else
-    pv $input | brp $out_files
+    pv $input | brp - `expr $mapcolumn - 1` $out_files
   fi
 fi
 
 # save it somewhere
-if [[ -z $output ]]
+if [[ -z `which brm` ]]
 then
-  sort -k$mapcolumn,$mapcolumn -m $jobpath/in/*
+  # use sort -m if we don't have brm
+  # sort -m creates tmp files if too many input files are specified
+  # brm doesn't do this
+  if [[ -z $output ]]
+  then
+    sort -k$mapcolumn,$mapcolumn -m $jobpath/in/*
+  else
+    sort -k$mapcolumn,$mapcolumn -m $jobpath/in/* | pv > $output
+  fi
 else
-  sort -k$mapcolumn,$mapcolumn -m $jobpath/in/* | pv > $output
+  if [[ -z $output ]]
+  then
+    brm - `expr $mapcolumn - 1` `find $jobpath/in/ -type p | xargs`
+  else
+    brm - `expr $mapcolumn - 1` `find $jobpath/in/ -type p | xargs` | pv > $output
+  fi
 fi
 
 # finally, clean up after ourselves
