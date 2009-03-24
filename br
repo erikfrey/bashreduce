@@ -17,6 +17,8 @@ function showhelp() {
         echo   "  -r: reduce function, default = identity"
         echo   "  -i: input file, default = stdin"
         echo   "  -o: output file, default = stdout"
+        echo   "  -t: tmp dir to use, default = /tmp"
+        echo   "  -S: memory to use for sort, default = 256M"
         echo   "  -h: this help message"
         exit 2
 } 
@@ -26,8 +28,10 @@ mapcolumn=1
 reduce=
 input=
 output=
+tmp_dir=/tmp
+sort_mem=256M
 
-while getopts "m:c:r:i:o:h" name
+while getopts "m:c:r:i:o:t:S:h" name
 do
   case $name in
     m)  hosts=$OPTARG;;
@@ -35,6 +39,8 @@ do
     r)  reduce=$OPTARG;;
     i)  input=$OPTARG;;
     o)  output=$OPTARG;;
+    t)  tmp_dir=$OPTARG;;
+    S)  sort_mem=$OPTARG;;
     h)  showhelp $0;;
     [?])  usage $0;;
   esac
@@ -58,8 +64,8 @@ fi
 
 # okay let's get started!  first we need a name for our job
 jobid=`uuidgen`
-jobpath="/tmp/br_job_$jobid"
-nodepath="/tmp/br_node_$jobid"
+jobpath="$tmp_dir/br_job_$jobid"
+nodepath="$tmp_dir/br_node_$jobid"
 mkdir $jobpath
 mkdir $jobpath/in
 mkdir $jobpath/out
@@ -79,7 +85,7 @@ do
   # lets get the pid of our listener
   ssh -n $host "mkdir -p $nodepath"
   pid=`ssh -n $host "nc -l -p $port_out > $nodepath/in_$host_idx 2> /dev/null < /dev/null & jobs -l" | awk {'print $2'}`
-  ssh $host -n "tail -s0.1 -f --pid=$pid $nodepath/in_$host_idx 2> /dev/null < /dev/null | LC_ALL='$LC_ALL' sort -k$mapcolumn,$mapcolumn $reduce 2>/dev/null | nc -q0 -l -p $port_in >& /dev/null &"
+  ssh $host -n "tail -s0.1 -f --pid=$pid $nodepath/in_$host_idx 2> /dev/null < /dev/null | LC_ALL='$LC_ALL' sort -S$sort_mem -T$tmp_dir -k$mapcolumn,$mapcolumn $reduce 2>/dev/null | nc -q0 -l -p $port_in >& /dev/null &"
   # our local forwarders
   nc $host $port_in > $jobpath/in/$host_idx &
   nc -q0 $host $port_out < $jobpath/out/$host_idx &
