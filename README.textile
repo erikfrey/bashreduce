@@ -56,6 +56,6 @@ h3. Future work
 
 br really doesn't need a dfs.  But you can simulate one with the current script:
 
-<pre>br -r "> /tmp/myfile" < input</pre>
+<pre>br -r "cat > /tmp/myfile" < input</pre>
 
 Other niceties would be to more closely mimic the options presented in sort (numeric, reverse, etc).
