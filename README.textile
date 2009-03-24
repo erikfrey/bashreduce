@@ -24,9 +24,9 @@ h3. word count
 
 <pre>br -r "uniq -c" < input > output</pre>
 
-h3. count words that begin with 'b'
+h3. great big join
 
-<pre>br -r "grep ^b | uniq -c" < input > output</pre>
+<pre>LC_ALL='C' br -r "join - /tmp/join_data" < input > output</pre>
 
 h2. Performance
 
