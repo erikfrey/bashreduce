@@ -5,6 +5,7 @@ bashreduce lets you apply your favorite unix tools in a mapreduce fashion across
 * "br":http://github.com/erikfrey/bashreduce/blob/master/br somewhere handy in your path
 * gnu core utils on each machine: sort, awk, grep
 * netcat on each machine
+* password-less ssh to each machine you plan to use
 
 h2. Configuration
 
@@ -50,7 +51,7 @@ Here lies the promise of mapreduce: rather than use my big honkin' machine, I ha
 | br -i 4gb_file -o 4gb_file_sorted | coreutils | 8m30.652s | 8.02 MBps |
 | br -i 4gb_file -o 4gb_file_sorted | brp/brm | 4m7.596s | 16.54 MBps |
 
-We have a new bottleneck: we're limited by how quickly we can partition/pump our dataset out to the nodes.  awk and sort begin to show their limitations (our clever awk script is a bit cpu bound, and @sort -m@ can only merge so many files at once).  So we use two little helper programs written in C (yes, I know!  it's cheating!  if you can think of a better partition/merge using core unix tools, contact me) to remove these bottlenecks.
+We have a new bottleneck: we're limited by how quickly we can partition/pump our dataset out to the nodes.  awk and sort begin to show their limitations (our clever awk script is a bit cpu bound, and @sort -m@ can only merge so many files at once).  So we use two little helper programs written in C (yes, I know!  it's cheating!  if you can think of a better partition/merge using core unix tools, contact me) to partition the data and merge it back.
 
 h3. Future work
 
