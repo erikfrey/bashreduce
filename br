@@ -3,7 +3,7 @@
 # erik@fawx.com
 
 function usage() {
-        printf "Usage: %s: [-m host1 [host2...]] [-m map] [-r reduce] [-i input] [-o output]\n" `basename $1`
+        printf "Usage: %s: [-m host1 [host2...]] [-c column] [-r reduce] [-i input] [-o output]\n" `basename $1`
         printf "       %s -h for help.\n" `basename $1`
         exit 2
 }
