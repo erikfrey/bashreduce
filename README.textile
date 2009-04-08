@@ -54,8 +54,12 @@ We have a new bottleneck: we're limited by how quickly we can partition/pump our
 
 h3. Future work
 
-br really doesn't need a dfs.  But you can simulate one with the current script:
+I've tested this on ubuntu/debian, but not on other distros.  According to Daniel Einspanjer, netcat has different parameters on Redhat.
+
+br has a poor man's dfs like so:
 
 <pre>br -r "cat > /tmp/myfile" < input</pre>
+
+But this breaks if you specify the same host multiple times.  Maybe some kind of very basic virtualization is in order.  Maybe.
 
 Other niceties would be to more closely mimic the options presented in sort (numeric, reverse, etc).
