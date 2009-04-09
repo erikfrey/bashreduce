@@ -3,13 +3,13 @@
 # erik@fawx.com
 
 function usage() {
-        printf "Usage: %s: [-m host1 [host2...]] [-c column] [-r reduce] [-i input] [-o output]\n" `basename $1`
+        printf "Usage: %s: [-m host1 [host2...]] [-c column] [-r reduce] [-i input] [-o output] [-n]\n" `basename $1`
         printf "       %s -h for help.\n" `basename $1`
         exit 2
 }
 
 function showhelp() {
-        printf "Usage: %s: [-m host1 [host2...]] [-c column] [-r reduce] [-i input] [-o output]\n" `basename $1`
+        printf "Usage: %s: [-m host1 [host2...]] [-c column] [-r reduce] [-i input] [-o output] [-n]\n" `basename $1`
         echo   "bashreduce.  Map an input file to many hosts, sort/reduce, merge"
         echo   "  -m: hosts to use, can repeat hosts for multiple cores"
         echo   "      default hosts from /etc/br.hosts"
@@ -19,6 +19,7 @@ function showhelp() {
         echo   "  -o: output file, default = stdout"
         echo   "  -t: tmp dir to use, default = /tmp"
         echo   "  -S: memory to use for sort, default = 256M"
+        echo   "  -n: sort numerically"
         echo   "  -h: this help message"
         exit 2
 } 
@@ -30,8 +31,9 @@ input=
 output=
 tmp_dir=/tmp
 sort_mem=256M
+numeric=
 
-while getopts "m:c:r:i:o:t:S:h" name
+while getopts "m:c:r:i:o:t:S:nh" name
 do
   case $name in
     m)  hosts=$OPTARG;;
@@ -41,6 +43,7 @@ do
     o)  output=$OPTARG;;
     t)  tmp_dir=$OPTARG;;
     S)  sort_mem=$OPTARG;;
+    n)  numeric='-n';;
     h)  showhelp $0;;
     [?])  usage $0;;
   esac
@@ -85,7 +88,7 @@ do
   # lets get the pid of our listener
   ssh -n $host "mkdir -p $nodepath"
   pid=`ssh -n $host "nc -l -p $port_out > $nodepath/in_$host_idx 2> /dev/null < /dev/null & jobs -l" | awk {'print $2'}`
-  ssh $host -n "tail -s0.1 -f --pid=$pid $nodepath/in_$host_idx 2> /dev/null < /dev/null | LC_ALL='$LC_ALL' sort -S$sort_mem -T$tmp_dir -k$mapcolumn,$mapcolumn $reduce 2>/dev/null | nc -q0 -l -p $port_in >& /dev/null &"
+  ssh $host -n "tail -s0.1 -f --pid=$pid $nodepath/in_$host_idx 2> /dev/null < /dev/null | LC_ALL='$LC_ALL' sort -S$sort_mem -T$tmp_dir -k$mapcolumn,$mapcolumn $numeric $reduce 2>/dev/null | nc -q0 -l -p $port_in >& /dev/null &"
   # our local forwarders
   nc $host $port_in > $jobpath/in/$host_idx &
   nc -q0 $host $port_out < $jobpath/out/$host_idx &
@@ -136,9 +139,9 @@ then
   # brm doesn't do this
   if [[ -z $output ]]
   then
-    sort -k$mapcolumn,$mapcolumn -m $jobpath/in/*
+    sort -k$mapcolumn,$mapcolumn -m $jobpath/in/* $numeric
   else
-    sort -k$mapcolumn,$mapcolumn -m $jobpath/in/* | pv > $output
+    sort -k$mapcolumn,$mapcolumn -m $jobpath/in/* $numeric | pv > $output
   fi
 else
   if [[ -z $output ]]
