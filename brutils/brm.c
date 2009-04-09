@@ -3,13 +3,29 @@
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
+#include <locale.h>
 
 #include "brutils.h"
 
 void showusage() {
-  fprintf(stderr, "usage: brm output column-index input1 input2 input3...\n");
+  fprintf(stderr, "usage: brm output column-index [n|c] input1 input2 input3...\n");
   fprintf(stderr, "       can specify '-' for output, to write to stdout\n");
   exit(1);
+}
+
+void getseps(int * decimal, int * thousands)
+{
+  struct lconv const *locale = localeconv ();
+  
+  if (!locale->decimal_point || locale->decimal_point[1])
+    *decimal = locale->decimal_point[0];
+  else
+    *decimal = '.';
+
+  if (!locale->thousands_sep || locale->thousands_sep[1])
+    *thousands = locale->thousands_sep[0];
+  else
+    *thousands = -1;
 }
 
 int main(int argc, char * argv[])
@@ -17,7 +33,7 @@ int main(int argc, char * argv[])
   FILE * pout = stdout;
   int i, col_index;
 
-  if (argc < 4)
+  if (argc < 5)
     showusage();
   if (strcmp(argv[1], "-") != 0)
     pout = try_open(argv[1], "wb");
