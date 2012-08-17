@@ -46,7 +46,7 @@ while getopts "m:c:r:i:o:t:S:h" name; do
   esac
 done 
 
-if [ -z $hosts ]; then
+if [ -z "$hosts" ]; then
   if [ -e /etc/br.hosts ]; then
     hosts=`cat /etc/br.hosts`
   else
