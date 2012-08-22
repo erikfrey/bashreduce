@@ -3,7 +3,7 @@ h2. bashreduce : mapreduce in a bash script
 bashreduce lets you apply your favorite unix tools in a mapreduce fashion across multiple machines/cores.  There's no installation, administration, or distributed filesystem.  You'll need:
 
 * "br":http://github.com/erikfrey/bashreduce/blob/master/br somewhere handy in your path
-* vanilla unix tools: sort, awk, ssh, netcat
+* vanilla unix tools: sort, awk, ssh, netcat, pv
 * password-less ssh to each machine you plan to use
 
 h2. Configuration
